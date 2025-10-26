@@ -1,5 +1,6 @@
 import React,{ useState } from 'react'
 import EnablePushButton from './components/EnablePushButton.jsx'
+import TestNotification from './components/TestNotification.jsx'
 import { getDeviceId} from './lib/deviceId.js'
 
 import './App.css'
@@ -12,6 +13,8 @@ function App() {
       <p>Activa las notificaciones y suscribete con un <code>deviceId</code> anonimo</p>
 
       <EnablePushButton onSubcibed={(id) => setDeviceId(id)} />
+
+      <TestNotification />
 
       {deviceId && (
         <div style={{ marginTop: 16}}>

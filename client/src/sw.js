@@ -3,31 +3,55 @@ import { precacheAndRoute } from 'workbox-precaching';
 // Precache de archivos estáticos
 precacheAndRoute(self.__WB_MANIFEST);
 
+// Escuchar eventos push
 self.addEventListener('push', (event) => {
-    let payload = {
-        title: 'Notificación',
-        body: 'Nueva notificación disponible',
+    console.log('Push recibido:', event);
+    
+    // Datos por defecto
+    let notificationData = {
+        title: 'Nueva notificación',
+        body: 'Tienes un nuevo mensaje',
         icon: '/Icon-192x192.png',
-        url: '/'
+        badge: '/Icon-192x192.png',
+        tag: 'push-notification',
+        data: { url: '/' }
     };
     
-    try {
-        if (event.data) {
-            payload = { ...payload, ...event.data.json() };
+    // Intentar parsear datos del push
+    if (event.data) {
+        try {
+            const pushData = event.data.json();
+            console.log('Datos del push:', pushData);
+            notificationData = {
+                title: pushData.title || notificationData.title,
+                body: pushData.body || notificationData.body,
+                icon: pushData.icon || notificationData.icon,
+                badge: notificationData.badge,
+                tag: notificationData.tag,
+                data: { url: pushData.url || '/', ...pushData.data }
+            };
+        } catch (error) {
+            console.error('Error parseando push data:', error);
         }
-    } catch (error) {
-        console.error('Error al parsear payload:', error);
     }
     
+    console.log('Mostrando notificación:', notificationData);
+    
+    // Mostrar notificación
     event.waitUntil(
-        self.registration.showNotification(payload.title, {
-            body: payload.body,
-            icon: payload.icon,
-            badge: '/Icon-192x192.png',
-            tag: 'notification-' + Date.now(),
+        self.registration.showNotification(notificationData.title, {
+            body: notificationData.body,
+            icon: notificationData.icon,
+            badge: notificationData.badge,
+            tag: notificationData.tag,
             requireInteraction: false,
             silent: false,
-            data: { url: payload.url || '/', ...payload.data }
+            vibrate: [200, 100, 200],
+            data: notificationData.data
+        }).then(() => {
+            console.log('Notificación mostrada exitosamente');
+        }).catch(error => {
+            console.error('Error mostrando notificación:', error);
         })
     );
 });

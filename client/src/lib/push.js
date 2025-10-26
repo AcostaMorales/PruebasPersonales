@@ -22,54 +22,74 @@ function urlBase64ToUint8Array(base64){
 }
 
 export async function enablePush(){
-    // Verificar si el navegador soporta notificaciones y service workers
-    if(!('Notification' in window))throw new Error ('Este navegador no soporta notificaciones');
-    // Verificar soporte para service workers
-    if(!('serviceWorker' in navigator)) throw new Error ('Este navegador no soporta service workers');
+    console.log('Iniciando proceso de habilitación de push...');
+    
+    // Verificar soporte básico
+    if(!('Notification' in window)) {
+        throw new Error('Este navegador no soporta notificaciones');
+    }
+    if(!('serviceWorker' in navigator)) {
+        throw new Error('Este navegador no soporta service workers');
+    }
+    if(!('PushManager' in window)) {
+        throw new Error('Este navegador no soporta push messaging');
+    }
+
+    console.log('Navegador compatible. Solicitando permisos...');
     
     // 1) Solicitar permiso para mostrar notificaciones
-    // la constante permiso espera la respuesta del usuario 
     const permiso = await Notification.requestPermission();
-    // Si el permiso es denegado, lanzar un error
-    if (permiso !== 'granted')throw new Error ('Permiso de notificaciones denegado');
+    console.log('Permiso de notificaciones:', permiso);
+    
+    if (permiso !== 'granted') {
+        throw new Error('Permiso de notificaciones denegado');
+    }
 
-    // 2) Registrar el service worker
-    // la constante registro espera a que el service worker esté listo
+    // 2) Esperar a que el service worker esté listo
+    console.log('Esperando service worker...');
     const registro = await navigator.serviceWorker.ready;
+    console.log('Service worker listo:', registro);
 
-    // 3) Suscribirse a las notificaciones push
-    // la constante subscription espera la suscripción push del service worker
-    const subscription = await registro.pushManager.subscribe({
-        // Indica que las notificaciones deben ser visibles para el usuario
-        userVisibleOnly: true,
-        // Clave pública del servidor para autenticar la suscripción
-        applicationServerKey: urlBase64ToUint8Array (VAPID_PUBLIC_KEY),
-    });
+    // 3) Verificar si ya existe una suscripción
+    let subscription = await registro.pushManager.getSubscription();
+    
+    if (!subscription) {
+        console.log('Creando nueva suscripción...');
+        // Crear nueva suscripción
+        subscription = await registro.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+    } else {
+        console.log('Suscripción existente encontrada');
+    }
 
-    // 4) Enviar la suscripción al servidor
-    // Importar la función getDeviceID de forma dinámica
-    // para obtener el identificador único del dispositivo
-    const { getDeviceId } = await import ('./deviceId.js')
-    // Obtener el deviceId
+    console.log('Suscripción obtenida:', subscription);
+
+    // 4) Enviar suscripción al servidor
+    const { getDeviceId } = await import('./deviceId.js');
     const deviceId = getDeviceId();
-
-    // Enviar la suscripción y el deviceId al servidor a través de una solicitud POST
+    
+    console.log('Enviando suscripción al servidor...');
     const respuesta = await fetch(`${API_URI}/push/subscribe`, {
-        // Tipo de solicitud
         method: 'POST',
-        // Encabezados de la solicitud
         headers: {
             'Content-Type': 'application/json',
         },
-        // Cuerpo de la solicitud en formato JSON
         body: JSON.stringify({
             deviceId,
             subscription: subscription,
         }),
     });
-    // Verificar si la respuesta del servidor es exitosa
-    if(!respuesta.ok) throw new Error ('Error al enviar la suscripción al servidor');
+    
+    console.log('Respuesta del servidor:', respuesta.status);
+    
+    if(!respuesta.ok) {
+        const errorText = await respuesta.text();
+        console.error('Error del servidor:', errorText);
+        throw new Error(`Error al enviar la suscripción al servidor: ${respuesta.status}`);
+    }
 
-    // 5) Regresar el deviceId para uso futuro
+    console.log('Push notifications habilitadas exitosamente');
     return deviceId;
 }
