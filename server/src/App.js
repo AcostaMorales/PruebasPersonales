@@ -9,7 +9,7 @@ const app = express();
 
 // Middlewares base
 app.use(cors(corsOptions));
-app.use('*', cors(corsOptions)); // para preflight requests
+//app.use('*', cors(corsOptions)); // para preflight requests
 app.use(express.json({limit: '1mb'}));
 app.use(cookieParser());
 
