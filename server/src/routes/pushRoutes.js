@@ -56,17 +56,29 @@ router.post('/broadcast', async (req, res, next) => {
             data: req.body.data || {}
         });
         const results = await Promise.allSettled(
-            subs.map(sub => webpush.sendNotification({endposint: sub.endpoint, keys: sub.keys}, payload))
+            subs.map(sub => webpush.sendNotification({endpoint: sub.endpoint, keys: sub.keys}, payload))
         );
 
         // Limpia expirados
         const toDelete = results
-            .map((result, index) => ({result, index: subs[index]}))
+            .map((result, index) => ({result, sub: subs[index]}))
             .filter(x => x.result.status === 'rejected' && [404,410].includes(x.result.reason?.statusCode))
             .map(x=>({deviceId: x.sub.deviceId}));
         if (toDelete.length){
             await Subscription.deleteMany({$or: toDelete});
         }
+        
+        // Enviar respuesta con estadísticas
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        
+        res.status(200).json({
+            message: 'Broadcast completed',
+            total: subs.length,
+            successful,
+            failed,
+            removed: toDelete.length
+        });
 
     }catch (error){
         next(error);
