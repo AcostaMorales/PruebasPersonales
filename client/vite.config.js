@@ -19,10 +19,9 @@ export default defineConfig({
     VitePWA({
       // Estrategia de generación del service worker
       // injectManifest permite personalizar el service worker existente
-      // osea que se inyectan las rutas precacheadas en un service worker personalizado
-      strategiest: 'injectManifest',
+      strategies: 'injectManifest',
       // Directorio fuente donde se encuentra el service worker personalizado
-      srcDIr: 'src',
+      srcDir: 'src',
       // Nombre del archivo del service worker
       // osea el archivo que contiene la lógica del service worker personalizado
       filename: 'sw.js',

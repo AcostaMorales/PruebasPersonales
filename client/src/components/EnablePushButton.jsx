@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {enablePush} from '../lib/push.js';
 
-export default function EnavlePushButton({onSubcibed}) {
+export default function EnablePushButton({onSubcibed}) {
     const [loading, setLoading] = useState(false);
 
     const handleClick = async () => {
