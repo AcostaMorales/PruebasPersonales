@@ -1,0 +1,22 @@
+{
+  "name": "Pruebas",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "client": "yarn workspace client start",
+    "server": "yarn workspace server start",
+    "start": "concurrently \"yarn client\" \"yarn server\"",
+    "status": "git status && git log -1"
+  },
+  "repository": "https://github.com/AcostaMorales/PruebasPersonales.git",
+  "author": "Pablo Daniel Acosta Morales <acostamoralespablodaniel@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
